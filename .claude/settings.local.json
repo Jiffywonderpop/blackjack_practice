@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java -version)",
+      "Read(//Users/Geoffrey/Library/Android/sdk/**)",
+      "Bash(sw_vers)"
+    ]
+  }
+}
