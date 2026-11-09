@@ -3,9 +3,11 @@
 /local.properties
 .idea/
 .DS_Store
-/build
+build/
 /captures
 .externalNativeBuild
 .cxx
 local.properties
 app/schemas/
+.kotlin/
+.claude/settings.local.json
