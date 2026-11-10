@@ -6,6 +6,7 @@ import com.geoffrey.blackjackpractice.data.local.dao.CountAccuracySummary
 import com.geoffrey.blackjackpractice.data.local.dao.CountGuessDao
 import com.geoffrey.blackjackpractice.data.local.dao.HandLogDao
 import com.geoffrey.blackjackpractice.data.local.dao.OutcomeSummary
+import com.geoffrey.blackjackpractice.domain.review.DecisionRecord
 import kotlinx.coroutines.flow.Flow
 
 class StatsRepository(
@@ -19,4 +20,7 @@ class StatsRepository(
     fun observeBankrollPoints(): Flow<List<BankrollPoint>> = handLogDao.observeBankrollPoints()
 
     fun observeCountAccuracyByMode(): Flow<List<CountAccuracySummary>> = countGuessDao.observeCountAccuracyByMode()
+
+    /** Every logged player decision (Play + Quiz), newest first. */
+    fun observeDecisionRecords(): Flow<List<DecisionRecord>> = handLogDao.observeDecisionRecords()
 }

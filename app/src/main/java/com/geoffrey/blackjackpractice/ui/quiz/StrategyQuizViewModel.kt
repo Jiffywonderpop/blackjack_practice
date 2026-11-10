@@ -5,11 +5,14 @@ import androidx.lifecycle.viewModelScope
 import com.geoffrey.blackjackpractice.data.local.entity.HandLogEntity
 import com.geoffrey.blackjackpractice.data.local.entity.SessionEntity
 import com.geoffrey.blackjackpractice.data.repository.SessionRepository
+import com.geoffrey.blackjackpractice.data.repository.StatsRepository
 import com.geoffrey.blackjackpractice.data.settings.AppSettings
 import com.geoffrey.blackjackpractice.data.settings.RulesSettingsRepository
+import com.geoffrey.blackjackpractice.domain.model.CardCodec
 import com.geoffrey.blackjackpractice.domain.model.HandAction
 import com.geoffrey.blackjackpractice.domain.model.PracticeMode
 import com.geoffrey.blackjackpractice.domain.strategy.DeviationEngine
+import com.geoffrey.blackjackpractice.domain.review.MistakeAnalyzer
 import com.geoffrey.blackjackpractice.domain.strategy.DeviationResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,18 +27,28 @@ data class StrategyQuizUiState(
     val correctCount: Int = 0,
     val lastResult: DeviationResult? = null,
     val lastActionTaken: HandAction? = null,
+    val isReviewDrill: Boolean = false,
+    /** Review drill requested but there are no logged mistakes yet, so questions are random. */
+    val noMistakesToReview: Boolean = false,
     val isLoading: Boolean = true
 )
 
 class StrategyQuizViewModel(
     private val settingsRepository: RulesSettingsRepository,
-    private val sessionRepository: SessionRepository
+    private val sessionRepository: SessionRepository,
+    private val statsRepository: StatsRepository,
+    /** When true, questions are replayed from the player's most-missed cases. */
+    private val reviewDrill: Boolean = false
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(StrategyQuizUiState())
     val uiState: StateFlow<StrategyQuizUiState> = _uiState.asStateFlow()
 
     private var settings: AppSettings = AppSettings()
+    private var drillGenerator: ReviewDrillGenerator? = null
+
+    private fun nextQuestionOrRandom(): QuizQuestion =
+        drillGenerator?.next() ?: QuizQuestionGenerator.next()
 
     init {
         viewModelScope.launch {
@@ -53,7 +66,17 @@ class StrategyQuizViewModel(
                     startingBankroll = 0.0
                 )
             )
-            _uiState.value = StrategyQuizUiState(sessionId = sessionId, isLoading = false, question = QuizQuestionGenerator.next())
+            if (reviewDrill) {
+                val report = MistakeAnalyzer.analyze(statsRepository.observeDecisionRecords().first())
+                drillGenerator = ReviewDrillGenerator(report.cases).takeUnless { it.isEmpty }
+            }
+            _uiState.value = StrategyQuizUiState(
+                sessionId = sessionId,
+                isLoading = false,
+                isReviewDrill = reviewDrill,
+                noMistakesToReview = reviewDrill && drillGenerator == null,
+                question = nextQuestionOrRandom()
+            )
         }
     }
 
@@ -67,8 +90,8 @@ class StrategyQuizViewModel(
             truncatedTrueCount = question.truncatedTrueCount,
             rules = settings.tableRules,
             playerAction = action,
-            canDouble = true,
-            canSurrender = true
+            canDouble = question.canDouble,
+            canSurrender = question.canSurrender
         )
 
         state.sessionId?.let { sid ->
@@ -78,8 +101,8 @@ class StrategyQuizViewModel(
                         sessionId = sid,
                         handIndexInSession = state.questionsAnswered,
                         timestamp = System.currentTimeMillis(),
-                        playerCards = question.hand.cards.joinToString(",") { "${it.rank.label}${it.suit.name.first()}" },
-                        dealerUpcard = "${question.dealerUpcard.rank.label}${question.dealerUpcard.suit.name.first()}",
+                        playerCards = CardCodec.encodeAll(question.hand.cards),
+                        dealerUpcard = CardCodec.encode(question.dealerUpcard),
                         playerHardTotal = question.hand.hardTotal,
                         isSoft = question.hand.isSoft,
                         isPair = question.hand.isPair,
@@ -108,7 +131,7 @@ class StrategyQuizViewModel(
     }
 
     fun nextQuestion() {
-        _uiState.value = _uiState.value.copy(question = QuizQuestionGenerator.next(), lastResult = null, lastActionTaken = null)
+        _uiState.value = _uiState.value.copy(question = nextQuestionOrRandom(), lastResult = null, lastActionTaken = null)
     }
 
     fun endSession() {

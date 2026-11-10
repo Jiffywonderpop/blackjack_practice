@@ -12,7 +12,11 @@ data class QuizQuestion(
     val hand: Hand,
     val dealerUpcard: Card,
     val truncatedTrueCount: Int,
-    val indexPlayLabel: String?
+    val indexPlayLabel: String?,
+    val canDouble: Boolean = true,
+    val canSurrender: Boolean = true,
+    /** Set when the question was replayed from one of the player's past mistakes. */
+    val reviewCaseLabel: String? = null
 )
 
 /** The 10 dealer-upcard columns, one representative rank per column (J/Q/K collapse to TEN). */

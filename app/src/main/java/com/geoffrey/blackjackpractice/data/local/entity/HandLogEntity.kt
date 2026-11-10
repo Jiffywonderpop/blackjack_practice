@@ -1,5 +1,6 @@
 package com.geoffrey.blackjackpractice.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -39,5 +40,10 @@ data class HandLogEntity(
     val betAmount: Double,
     val outcome: HandOutcome?,
     val payout: Double?,
-    val bankrollAfter: Double?
+    val bankrollAfter: Double?,
+    /**
+     * False for rows logged only to record an outcome (natural blackjack, dealer blackjack)
+     * where the player never made a choice; those are excluded from strategy tracking.
+     */
+    @ColumnInfo(defaultValue = "1") val isDecision: Boolean = true
 )

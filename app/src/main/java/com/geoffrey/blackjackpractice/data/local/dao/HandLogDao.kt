@@ -6,10 +6,8 @@ import androidx.room.Query
 import com.geoffrey.blackjackpractice.data.local.entity.HandLogEntity
 import com.geoffrey.blackjackpractice.domain.model.DeviationClassification
 import com.geoffrey.blackjackpractice.domain.model.HandOutcome
+import com.geoffrey.blackjackpractice.domain.review.DecisionRecord
 import kotlinx.coroutines.flow.Flow
-
-
-
 data class OutcomeSummary(
     val outcome: HandOutcome,
     val count: Int,
@@ -58,6 +56,7 @@ interface HandLogDao {
         """
         SELECT deviationClassification AS deviationClassification, COUNT(*) AS count
         FROM hand_logs
+        WHERE isDecision = 1
         GROUP BY deviationClassification
         """
     )
@@ -72,4 +71,26 @@ interface HandLogDao {
         """
     )
     fun observeBankrollPoints(): Flow<List<BankrollPoint>>
+
+    @Query(
+        """
+        SELECT s.mode AS mode,
+               h.timestamp AS timestamp,
+               h.playerCards AS playerCards,
+               h.dealerUpcard AS dealerUpcard,
+               h.playerHardTotal AS playerHardTotal,
+               h.isSoft AS isSoft,
+               h.isPair AS isPair,
+               h.trueCountAtDecision AS trueCount,
+               h.actionTaken AS actionTaken,
+               h.optimalBasicAction AS optimalBasicAction,
+               h.optimalFinalAction AS optimalFinalAction,
+               h.deviationClassification AS classification
+        FROM hand_logs h
+        INNER JOIN sessions s ON s.id = h.sessionId
+        WHERE h.isDecision = 1
+        ORDER BY h.timestamp DESC
+        """
+    )
+    fun observeDecisionRecords(): Flow<List<DecisionRecord>>
 }

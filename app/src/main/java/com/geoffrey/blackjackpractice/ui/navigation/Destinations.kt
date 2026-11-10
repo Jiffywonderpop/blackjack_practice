@@ -9,6 +9,8 @@ object Destinations {
     const val SESSION_HISTORY = "session_history"
     const val SESSION_DETAIL = "session_detail/{sessionId}"
     const val SETTINGS = "settings"
+    const val MISTAKE_REVIEW = "mistake_review"
+    const val MISTAKE_DRILL = "mistake_drill"
 
     fun sessionDetail(sessionId: Long) = "session_detail/$sessionId"
 }

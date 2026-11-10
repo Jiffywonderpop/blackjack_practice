@@ -34,7 +34,7 @@ fun StrategyQuizScreen(viewModel: StrategyQuizViewModel, onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Strategy Quiz") },
+                title = { Text(if (state.isReviewDrill) "Mistake Drill" else "Strategy Quiz") },
                 navigationIcon = {
                     IconButton(onClick = { viewModel.endSession(); onBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -52,6 +52,12 @@ fun StrategyQuizScreen(viewModel: StrategyQuizViewModel, onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text("Score: ${state.correctCount}/${state.questionsAnswered}")
+            if (state.noMistakesToReview) {
+                Text(
+                    "No mistakes logged yet — showing random questions instead.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
 
             if (question != null) {
                 Card(Modifier.fillMaxWidth()) {
@@ -62,6 +68,9 @@ fun StrategyQuizScreen(viewModel: StrategyQuizViewModel, onBack: () -> Unit) {
                         )
                         Text("Dealer shows: ${question.dealerUpcard.rank.label}")
                         Text("True count: ${question.truncatedTrueCount}")
+                        question.reviewCaseLabel?.let {
+                            Text("From your mistakes: $it", style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                 }
 
@@ -70,9 +79,9 @@ fun StrategyQuizScreen(viewModel: StrategyQuizViewModel, onBack: () -> Unit) {
                     val actions = buildList {
                         add(HandAction.HIT)
                         add(HandAction.STAND)
-                        add(HandAction.DOUBLE)
-                        if (question.hand.isPair) add(HandAction.SPLIT)
-                        add(HandAction.SURRENDER)
+                        if (question.canDouble) add(HandAction.DOUBLE)
+                        if (question.hand.isPair && question.hand.cards.size == 2) add(HandAction.SPLIT)
+                        if (question.canSurrender) add(HandAction.SURRENDER)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         actions.forEach { action ->

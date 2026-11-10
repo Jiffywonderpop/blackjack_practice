@@ -14,7 +14,7 @@ class AppContainer(context: Context) {
         context.applicationContext,
         AppDatabase::class.java,
         AppDatabase.DATABASE_NAME
-    ).build()
+    ).addMigrations(AppDatabase.MIGRATION_1_2).build()
 
     val settingsRepository: RulesSettingsRepository = RulesSettingsRepository(context.applicationContext)
 

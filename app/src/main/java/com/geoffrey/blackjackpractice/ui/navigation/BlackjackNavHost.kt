@@ -19,6 +19,8 @@ import com.geoffrey.blackjackpractice.ui.play.PlayScreen
 import com.geoffrey.blackjackpractice.ui.play.PlayViewModel
 import com.geoffrey.blackjackpractice.ui.quiz.StrategyQuizScreen
 import com.geoffrey.blackjackpractice.ui.quiz.StrategyQuizViewModel
+import com.geoffrey.blackjackpractice.ui.review.MistakeReviewScreen
+import com.geoffrey.blackjackpractice.ui.review.MistakeReviewViewModel
 import com.geoffrey.blackjackpractice.ui.settings.SettingsScreen
 import com.geoffrey.blackjackpractice.ui.settings.SettingsViewModel
 import com.geoffrey.blackjackpractice.ui.speeddrill.SpeedDrillScreen
@@ -38,6 +40,7 @@ fun BlackjackNavHost(navController: NavHostController = rememberNavController())
                 onSpeedDrill = { navController.navigate(Destinations.SPEED_DRILL) },
                 onQuiz = { navController.navigate(Destinations.STRATEGY_QUIZ) },
                 onStats = { navController.navigate(Destinations.STATS_DASHBOARD) },
+                onReview = { navController.navigate(Destinations.MISTAKE_REVIEW) },
                 onHistory = { navController.navigate(Destinations.SESSION_HISTORY) },
                 onSettings = { navController.navigate(Destinations.SETTINGS) }
             )
@@ -57,6 +60,19 @@ fun BlackjackNavHost(navController: NavHostController = rememberNavController())
         composable(Destinations.STATS_DASHBOARD) {
             val viewModel: StatsViewModel = viewModel(factory = factory)
             StatsDashboardScreen(viewModel, onBack = { navController.popBackStack() })
+        }
+        composable(Destinations.MISTAKE_REVIEW) {
+            val viewModel: MistakeReviewViewModel = viewModel(factory = factory)
+            MistakeReviewScreen(
+                viewModel,
+                onBack = { navController.popBackStack() },
+                onStartDrill = { navController.navigate(Destinations.MISTAKE_DRILL) }
+            )
+        }
+        composable(Destinations.MISTAKE_DRILL) {
+            val viewModel: StrategyQuizViewModel =
+                viewModel(factory = ViewModelFactory(application.container, reviewDrill = true))
+            StrategyQuizScreen(viewModel, onBack = { navController.popBackStack() })
         }
         composable(Destinations.SESSION_HISTORY) {
             val viewModel: SessionHistoryViewModel = viewModel(factory = factory)

@@ -20,6 +20,7 @@ fun HomeScreen(
     onSpeedDrill: () -> Unit,
     onQuiz: () -> Unit,
     onStats: () -> Unit,
+    onReview: () -> Unit,
     onHistory: () -> Unit,
     onSettings: () -> Unit
 ) {
@@ -38,6 +39,7 @@ fun HomeScreen(
             Button(onClick = onSpeedDrill, modifier = Modifier.fillMaxWidth()) { Text("Speed count drill") }
             Button(onClick = onQuiz, modifier = Modifier.fillMaxWidth()) { Text("Strategy quiz") }
             OutlinedButton(onClick = onStats, modifier = Modifier.fillMaxWidth()) { Text("Stats dashboard") }
+            OutlinedButton(onClick = onReview, modifier = Modifier.fillMaxWidth()) { Text("Review my mistakes") }
             OutlinedButton(onClick = onHistory, modifier = Modifier.fillMaxWidth()) { Text("Session history") }
             OutlinedButton(onClick = onSettings, modifier = Modifier.fillMaxWidth()) { Text("Settings") }
         }

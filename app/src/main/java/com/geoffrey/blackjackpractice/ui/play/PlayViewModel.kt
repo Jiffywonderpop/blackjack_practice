@@ -12,6 +12,7 @@ import com.geoffrey.blackjackpractice.domain.GameEngine
 import com.geoffrey.blackjackpractice.domain.RoundState
 import com.geoffrey.blackjackpractice.domain.counting.HiLoCounter
 import com.geoffrey.blackjackpractice.domain.model.BetSpreadMode
+import com.geoffrey.blackjackpractice.domain.model.CardCodec
 import com.geoffrey.blackjackpractice.domain.model.DeviationClassification
 import com.geoffrey.blackjackpractice.domain.model.HandAction
 import com.geoffrey.blackjackpractice.domain.model.PracticeMode
@@ -109,6 +110,8 @@ class PlayViewModel(
         val hand = round.playerHands[idx]
         val dealerUpcard = round.dealerHand.cards[0]
         val legal = engine.legalActions(round, idx)
+        // Illegal presses (e.g. Split on a non-pair) are ignored rather than graded as a decision.
+        if (action !in legal) return
         val tc = counter.truncatedTrueCount(shoe.cardsRemaining)
 
         val deviation = DeviationEngine.evaluate(
@@ -140,8 +143,8 @@ class PlayViewModel(
                         sessionId = sid,
                         handIndexInSession = state.handsPlayed + idx,
                         timestamp = System.currentTimeMillis(),
-                        playerCards = hand.cards.joinToString(",") { "${it.rank.label}${it.suit.name.first()}" },
-                        dealerUpcard = "${dealerUpcard.rank.label}${dealerUpcard.suit.name.first()}",
+                        playerCards = CardCodec.encodeAll(hand.cards),
+                        dealerUpcard = CardCodec.encode(dealerUpcard),
                         playerHardTotal = hand.hardTotal,
                         isSoft = hand.isSoft,
                         isPair = hand.isPair,
@@ -190,8 +193,8 @@ class PlayViewModel(
                         sessionId = sid,
                         handIndexInSession = state.handsPlayed + index,
                         timestamp = System.currentTimeMillis(),
-                        playerCards = hand.cards.joinToString(",") { "${it.rank.label}${it.suit.name.first()}" },
-                        dealerUpcard = "${dealerUpcard.rank.label}${dealerUpcard.suit.name.first()}",
+                        playerCards = CardCodec.encodeAll(hand.cards),
+                        dealerUpcard = CardCodec.encode(dealerUpcard),
                         playerHardTotal = hand.hardTotal,
                         isSoft = hand.isSoft,
                         isPair = hand.isPair,
@@ -204,7 +207,8 @@ class PlayViewModel(
                         betAmount = hand.bet,
                         outcome = outcome,
                         payout = payout,
-                        bankrollAfter = runningBankroll
+                        bankrollAfter = runningBankroll,
+                        isDecision = false
                     )
                 )
             }
