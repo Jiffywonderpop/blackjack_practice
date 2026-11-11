@@ -1,5 +1,22 @@
 package com.geoffrey.blackjackpractice.ui.quiz
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.geoffrey.blackjackpractice.ui.components.CasinoButton
+import com.geoffrey.blackjackpractice.ui.components.FeltBackground
+import com.geoffrey.blackjackpractice.ui.components.HudPill
+import com.geoffrey.blackjackpractice.ui.components.PlayingCardView
+import com.geoffrey.blackjackpractice.ui.components.TotalBadge
+import com.geoffrey.blackjackpractice.ui.components.TotalTone
+import com.geoffrey.blackjackpractice.ui.components.actionGradient
+import com.geoffrey.blackjackpractice.ui.theme.CasinoColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,19 +77,7 @@ fun StrategyQuizScreen(viewModel: StrategyQuizViewModel, onBack: () -> Unit) {
             }
 
             if (question != null) {
-                Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            "Your hand: ${describeHand(question.hand)}",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text("Dealer shows: ${question.dealerUpcard.rank.label}")
-                        Text("True count: ${question.truncatedTrueCount}")
-                        question.reviewCaseLabel?.let {
-                            Text("From your mistakes: $it", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
+                QuizTable(question)
 
                 val result = state.lastResult
                 if (result == null) {
@@ -83,18 +88,26 @@ fun StrategyQuizScreen(viewModel: StrategyQuizViewModel, onBack: () -> Unit) {
                         if (question.hand.isPair && question.hand.cards.size == 2) add(HandAction.SPLIT)
                         if (question.canSurrender) add(HandAction.SURRENDER)
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        actions.forEach { action ->
-                            OutlinedButton(onClick = { viewModel.answer(action) }) {
-                                Text(action.name.lowercase().replaceFirstChar { it.uppercase() })
+                    actions.chunked(3).forEach { row ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            row.forEach { action ->
+                                val (top, bottom) = actionGradient(action)
+                                CasinoButton(
+                                    label = action.name,
+                                    top = top,
+                                    bottom = bottom,
+                                    onClick = { viewModel.answer(action) },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                         }
                     }
                 } else {
                     val isCorrect = state.lastActionTaken == result.optimalFinalAction
                     Text(
-                        if (isCorrect) "Correct!" else "Not quite — optimal play was ${result.optimalFinalAction}.",
-                        style = MaterialTheme.typography.titleMedium
+                        if (isCorrect) "✓ Correct!" else "✗ Not quite — optimal play was ${result.optimalFinalAction}.",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (isCorrect) CasinoColors.Win else CasinoColors.Lose
                     )
                     Text("Classification: ${result.classification}")
                     result.indexPlay?.let { Text("Index play in effect: ${it.label}") }
@@ -107,8 +120,36 @@ fun StrategyQuizScreen(viewModel: StrategyQuizViewModel, onBack: () -> Unit) {
     }
 }
 
+@Composable
+private fun QuizTable(question: QuizQuestion) {
+    FeltBackground(Modifier.clip(RoundedCornerShape(20.dp)).height(300.dp)) {
+        Column(
+            Modifier.fillMaxSize().padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("DEALER", color = CasinoColors.Gold, fontWeight = FontWeight.Bold, letterSpacing = 2.sp, fontSize = 11.sp)
+                HudPill {
+                    Text("TC", color = CasinoColors.Gold, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("%+d".format(question.truncatedTrueCount), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                PlayingCardView(question.dealerUpcard, width = 60.dp)
+                PlayingCardView(null, width = 60.dp)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                question.hand.cards.forEach { PlayingCardView(it, width = 66.dp) }
+            }
+            TotalBadge(describeHand(question.hand), TotalTone.ACTIVE)
+            question.reviewCaseLabel?.let {
+                Text("From your mistakes: $it", color = CasinoColors.GoldLight, fontSize = 12.sp)
+            }
+        }
+    }
+}
+
 private fun describeHand(hand: Hand): String {
-    val cardsText = hand.cards.joinToString(", ") { it.rank.label }
-    val totalText = if (hand.isSoft) "soft ${hand.bestTotal}" else "hard ${hand.bestTotal}"
-    return "$cardsText ($totalText)"
+    return if (hand.isSoft) "Soft ${hand.bestTotal}" else "Hard ${hand.bestTotal}"
 }

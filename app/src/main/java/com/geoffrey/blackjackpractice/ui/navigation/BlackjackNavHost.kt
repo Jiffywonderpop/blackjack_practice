@@ -11,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.geoffrey.blackjackpractice.BlackjackApplication
 import com.geoffrey.blackjackpractice.di.ViewModelFactory
+import com.geoffrey.blackjackpractice.ui.components.ReadableWidth
 import com.geoffrey.blackjackpractice.ui.history.SessionDetailScreen
 import com.geoffrey.blackjackpractice.ui.history.SessionHistoryScreen
 import com.geoffrey.blackjackpractice.ui.history.SessionHistoryViewModel
@@ -51,36 +52,48 @@ fun BlackjackNavHost(navController: NavHostController = rememberNavController())
         }
         composable(Destinations.SPEED_DRILL) {
             val viewModel: SpeedDrillViewModel = viewModel(factory = factory)
-            SpeedDrillScreen(viewModel, onBack = { navController.popBackStack() })
+            ReadableWidth {
+                SpeedDrillScreen(viewModel, onBack = { navController.popBackStack() })
+            }
         }
         composable(Destinations.STRATEGY_QUIZ) {
             val viewModel: StrategyQuizViewModel = viewModel(factory = factory)
-            StrategyQuizScreen(viewModel, onBack = { navController.popBackStack() })
+            ReadableWidth {
+                StrategyQuizScreen(viewModel, onBack = { navController.popBackStack() })
+            }
         }
         composable(Destinations.STATS_DASHBOARD) {
             val viewModel: StatsViewModel = viewModel(factory = factory)
-            StatsDashboardScreen(viewModel, onBack = { navController.popBackStack() })
+            ReadableWidth {
+                StatsDashboardScreen(viewModel, onBack = { navController.popBackStack() })
+            }
         }
         composable(Destinations.MISTAKE_REVIEW) {
             val viewModel: MistakeReviewViewModel = viewModel(factory = factory)
-            MistakeReviewScreen(
-                viewModel,
-                onBack = { navController.popBackStack() },
-                onStartDrill = { navController.navigate(Destinations.MISTAKE_DRILL) }
-            )
+            ReadableWidth {
+                MistakeReviewScreen(
+                    viewModel,
+                    onBack = { navController.popBackStack() },
+                    onStartDrill = { navController.navigate(Destinations.MISTAKE_DRILL) }
+                )
+            }
         }
         composable(Destinations.MISTAKE_DRILL) {
             val viewModel: StrategyQuizViewModel =
                 viewModel(factory = ViewModelFactory(application.container, reviewDrill = true))
-            StrategyQuizScreen(viewModel, onBack = { navController.popBackStack() })
+            ReadableWidth {
+                StrategyQuizScreen(viewModel, onBack = { navController.popBackStack() })
+            }
         }
         composable(Destinations.SESSION_HISTORY) {
             val viewModel: SessionHistoryViewModel = viewModel(factory = factory)
-            SessionHistoryScreen(
-                viewModel,
-                onBack = { navController.popBackStack() },
-                onOpenSession = { sessionId -> navController.navigate(Destinations.sessionDetail(sessionId)) }
-            )
+            ReadableWidth {
+                SessionHistoryScreen(
+                    viewModel,
+                    onBack = { navController.popBackStack() },
+                    onOpenSession = { sessionId -> navController.navigate(Destinations.sessionDetail(sessionId)) }
+                )
+            }
         }
         composable(
             Destinations.SESSION_DETAIL,
@@ -88,11 +101,15 @@ fun BlackjackNavHost(navController: NavHostController = rememberNavController())
         ) { backStackEntry ->
             val viewModel: SessionHistoryViewModel = viewModel(factory = factory)
             val sessionId = backStackEntry.arguments?.getLong("sessionId") ?: return@composable
-            SessionDetailScreen(viewModel, sessionId, onBack = { navController.popBackStack() })
+            ReadableWidth {
+                SessionDetailScreen(viewModel, sessionId, onBack = { navController.popBackStack() })
+            }
         }
         composable(Destinations.SETTINGS) {
             val viewModel: SettingsViewModel = viewModel(factory = factory)
-            SettingsScreen(viewModel, onBack = { navController.popBackStack() })
+            ReadableWidth {
+                SettingsScreen(viewModel, onBack = { navController.popBackStack() })
+            }
         }
     }
 }
