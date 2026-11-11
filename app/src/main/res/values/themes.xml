@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.BlackjackPractice" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Dark casino window so there is no white flash before Compose draws the felt. -->
+    <style name="Theme.BlackjackPractice" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/felt_edge</item>
+    </style>
 </resources>

@@ -67,7 +67,10 @@ class PlayViewModel(
                 rules = settings.tableRules,
                 bankroll = settings.startingBankroll,
                 betAmount = settings.flatBetAmount,
+                betSpreadMode = settings.betSpreadMode,
                 showLiveCount = settings.showLiveCount,
+                cardsRemaining = shoe.cardsRemaining,
+                totalCards = shoe.totalCards,
                 isLoading = false
             )
         }
@@ -77,16 +80,24 @@ class PlayViewModel(
         val state = _uiState.value
         if (state.isLoading || state.roundState?.roundOver == false) return
 
+        if (state.betAmount <= 0.0) return
+
         lastLogIdForHand.clear()
-        val bet = currentBet()
+        val bet = currentBet(state.betAmount)
         val round = engine.startRound(bet)
         val runningCountSnapshot = counter.runningCount
         val trueCountSnapshot = counter.trueCount(shoe.cardsRemaining)
 
         _uiState.value = state.copy(
             roundState = round,
+            roundNumber = state.roundNumber + 1,
+            legalActions = legalActionsFor(round),
+            hintAction = null,
+            feedback = null,
             runningCount = runningCountSnapshot,
-            trueCount = trueCountSnapshot
+            trueCount = trueCountSnapshot,
+            cardsRemaining = shoe.cardsRemaining,
+            totalCards = shoe.totalCards
         )
 
         if (round.roundOver) {
@@ -94,11 +105,54 @@ class PlayViewModel(
         }
     }
 
-    private fun currentBet(): Double = if (settings.betSpreadMode == BetSpreadMode.FLAT) {
-        settings.flatBetAmount
+    private fun currentBet(unit: Double): Double = if (settings.betSpreadMode == BetSpreadMode.FLAT) {
+        unit
     } else {
         val tc = counter.truncatedTrueCount(shoe.cardsRemaining)
-        settings.flatBetAmount * maxOf(1, tc + 1)
+        unit * maxOf(1, tc + 1)
+    }
+
+    private fun legalActionsFor(round: RoundState): Set<HandAction> {
+        if (round.roundOver) return emptySet()
+        val idx = round.activeHandIndex
+        return if (idx in round.playerHands.indices) engine.legalActions(round, idx) else emptySet()
+    }
+
+    /** Adds a chip to the wager for the next deal (chip tray). Ignored mid-round. */
+    fun addChip(value: Int) {
+        val state = _uiState.value
+        if (state.roundState?.roundOver == false) return
+        _uiState.value = state.copy(betAmount = (state.betAmount + value).coerceAtMost(MAX_BET))
+    }
+
+    fun clearBet() {
+        val state = _uiState.value
+        if (state.roundState?.roundOver == false) return
+        _uiState.value = state.copy(betAmount = 0.0)
+    }
+
+    /** Reveals the correct play (including Illustrious 18 index plays) for the acting hand. */
+    fun showHint() {
+        val state = _uiState.value
+        val round = state.roundState ?: return
+        val idx = round.activeHandIndex
+        if (round.roundOver || idx !in round.playerHands.indices) return
+        val legal = state.legalActions
+        val result = DeviationEngine.evaluate(
+            hand = round.playerHands[idx],
+            dealerUpcard = round.dealerHand.cards[0],
+            truncatedTrueCount = counter.truncatedTrueCount(shoe.cardsRemaining),
+            rules = settings.tableRules,
+            playerAction = HandAction.STAND,
+            canDouble = HandAction.DOUBLE in legal,
+            canSurrender = HandAction.SURRENDER in legal
+        )
+        _uiState.value = state.copy(hintAction = result.optimalFinalAction)
+    }
+
+    fun dismissFeedback(id: Int) {
+        val state = _uiState.value
+        if (state.feedback?.id == id) _uiState.value = state.copy(feedback = null)
     }
 
     fun act(action: HandAction) {
@@ -130,9 +184,17 @@ class PlayViewModel(
 
         _uiState.value = state.copy(
             roundState = newRound,
+            legalActions = legalActionsFor(newRound),
+            hintAction = null,
             runningCount = counter.runningCount,
             trueCount = counter.trueCount(shoe.cardsRemaining),
-            lastDeviationFeedback = deviation.classification.name
+            cardsRemaining = shoe.cardsRemaining,
+            feedback = DecisionFeedback(
+                id = (state.feedback?.id ?: 0) + 1,
+                classification = deviation.classification,
+                actionTaken = action,
+                correctAction = deviation.optimalFinalAction
+            )
         )
 
         viewModelScope.launch {
@@ -259,5 +321,9 @@ class PlayViewModel(
                 }
             }
         }
+    }
+
+    private companion object {
+        const val MAX_BET = 10_000.0
     }
 }

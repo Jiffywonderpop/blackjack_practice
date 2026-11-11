@@ -12,7 +12,11 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|keyboard|keyboardHidden|navigation"
+            android:resizeableActivity="true"
             android:theme="@style/Theme.BlackjackPractice">
+            <!-- Fold/unfold and rotation are handled by Compose in place, so a hand in progress
+                 (and its deal animations) carries straight across between the cover and inner screens. -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

@@ -1,5 +1,6 @@
 package com.geoffrey.blackjackpractice.ui.speeddrill
 
+import com.geoffrey.blackjackpractice.ui.components.PlayingCardView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,11 +57,8 @@ fun SpeedDrillScreen(viewModel: SpeedDrillViewModel, onBack: () -> Unit) {
         ) {
             if (state.isRunning) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = state.currentCard?.let { "${it.rank.label}" } ?: "",
-                        fontSize = 96.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    // Static (no deal animation): flashes can be faster than the animation itself.
+                    state.currentCard?.let { PlayingCardView(it, width = 180.dp) }
                 }
             } else if (state.isFinished) {
                 GuessEntry(onSubmit = { viewModel.submitGuess(it) })
